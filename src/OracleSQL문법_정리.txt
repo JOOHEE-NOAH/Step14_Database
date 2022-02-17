@@ -1,0 +1,180 @@
+※데이타베이스
+: 많은양의 자료를 특정한 규칙에 맞게 저장장치에 보관하여 필요한 업무에 사용하는 저장매체
+   ex) Oracle, MS-SQL,  MySql,  DB2, Access등
+
+※ DBMS
+    데이타베이스 안에 있는 데이타를 관리하는것
+    (읽기,변경,삭제,추가가 가능)
+
+다운로드 : www.oracle.com 에서 OracleXE11g,  SQL Developer툴
+
+1. OracleXEUniv.exe(오라클) 설치 / Oracle Develper설치
+   웹 : http://localhost:8080/apex
+        ID명  :  system	/ pw명 :  oracle 	<--관리자계정 (계정관련작업, 시스템관련작업)
+        ID명  :  hr	             / pw명 :  hr	<--사용자계정 (계정, 시스템 관련 작업 )
+        ID명  :  scott	             / pw명 :  tiger	<--사용자계정
+        ID명  :  edu	             / pw명 :  1234	<--사용자계정
+        SID명 :  xe
+
+※sys계정 비밀번호 없이 로그인
+	C:\>  sqlplus  / as sysdba
+
+2. 콘솔 : cmd 창에서
+-------------------------------------------2
+		C:\> sqlplus system/1234
+		SQL> alter user hr identified by hr account unlock;
+		SQL> exit
+		
+		
+--------------------------------------------1		
+         ※ 계정접속/lock풀기/비밀번호바꾸기 
+        C:\>  sqlplus  /nolog     <-- 계정없이 로그인
+        SQL> show user
+                 USER is ""
+        SQL> conn system as sysdba;   <-- 계정 바꾸기
+                 Enter password : oracle  
+       SQL> show user
+                 USER is "SYSTEM"
+       
+       SQL> alter user hr account unlock;    <-- hr계정 lock풀기
+       SQL> alter user hr identified by hr;    <-- hr계정 비밀번호 바꾸기 
+       (또는  alter user hr identified by hr account unlock;  )
+
+       SQL> conn hr/hr   -- hr으로 계정바꾸기
+       SQL> show user
+                USER is "HR"
+      SQL> exit
+
+      C:\> sqlplus hr/hr     -- hr계정으로 로그인 하기
+      C:\> sqlplus system/oracle
+
+      ※ 계정생성 
+      C:\> sqlplus /nolog <--접속
+      SQL> conn sys as sysdba
+      Enter password :
+      SQL> create user scott identified by tiger; <-- scott(계정) / tiger(비번) 생성
+      SQL> grant connect, resource to scott;      <-- 권한주기
+              (connect, resource은 일반적인 권한 - DDL, DML사용가능)
+              grant create view to scott;    -- view권한 추가
+ 
+      SQL> conn scott/tiger                             <-- scott계정으로 접속
+      SQL> show user;                                      <--접속 계정확인
+
+    ※ 계정삭제
+     SQL> drop user 유저네임 cascade;
+             (cascade 는 관련된 모든 데이터베이스 스키마까지 삭제됨)
+
+3. 오라클이 구동되지 않을때 확인할것(시작->설정->제어판->관리도구->서비스)
+ OracleServiceXE	               시작됨
+ OracleXETNSListener            시작됨
+
+4.OracleXE 포트변경
+   : 오라클의 기본port는 8080인데 tomcat과 포트가 충돌이 생기기 때문에
+     불가피하게 오라클 포트를 9000으로 변경한다
+
+    cmd창을 띄우고
+    c:\> sqlplus  system/oracle
+    sql> select dbms_xdb.gethttpport() from dual;   <---오라클 포트확인
+    sql> exec dbms_xdb.sethttpport(9000);             <---오라클 포트변경
+    sql> exit 
+
+    
+
+----------------------------------------------------------------------------------
+※기본적인 SQL문
+   DDL(Data Defineton Languag) : 데이터를 정의
+   - create, alter, drop, rename, truncate등
+   - 자동커밋이 발생
+
+   DML(Data Manipulation Language) : 데이터를 조작하는 기능
+   - select, insert, delete, update
+   - transcation처리(commit, rollback)
+
+
+1. create문(테이블생성)
+   create table 테이블명(
+         필드이름 데이터타입 [not null][primary key],
+         필드이름 데이터타입 [not null].........);
+예) create table member(name varchar(20), email varchar(30));
+
+ == 자료형 ===
+ number : 숫자형
+ int    : 정수형
+ char   : 문자형(고정형)
+ varchar/varchar2 : 문자형(가변형) - 4000byte까지
+ clob : 문자형(4000byte이상일때)   - 최대 4GB
+ blob : binary로저장(그림, 음악등) - 최대 4GB
+ date : 날짜형
+ timestamp : date형의 확장
+
+ ※시퀀스(sequence) : 자동값증가
+ [형식] 
+  create sequence 시퀀스명
+  [increment by n]         ---> 증가값
+  [start with n]           ---> 시작값    
+
+ ==시퀀스주기==
+ create sequence seq_id increment by 1 start with 1;
+ create sequence seq_id;
+ 
+ ==시퀀스 삭제==
+ drop sequence seq_id
+
+2. drop문
+  drop table 테이블명 : 테이블제거
+  drop table 테이블명 purge : 테이블제거,휴지통비우기
+  (purge recyclebin : 휴지통비우기)
+
+예)drop table member;  (member테이블 제거)
+
+3. alter문(table구조변경)
+   alter table 테이블이름 add 필드이름 데이터타입 [not null];
+   예)alter table member add addr varchar(50);                           
+      (member 테이블에 addr필드 추가)
+
+      alter table 테이블명 add  primary key (필드명)    
+      (기본키설정)
+
+      alter table 테이블명 rename column 컬럼명1 to 컬럼명2;  
+      (컬럼명 바꾸기)
+
+      alter table 테이블명 modify(컬럼명 자료형);    
+      (컬럼수정)
+
+      alter table 테이블명 drop column 컬럼명;
+      (컬럼삭제)
+
+4. 테이블명 변경
+   rename 원래이름 to 변경이름
+
+4. desc 테이블명(테이블속성(구조)보기)
+   예) desc member;
+
+
+5.질의문(Query)  - DML
+(1) select문(테이블의 레코드 검색)
+    select [distinct] [컬럼1,컬럼2,.....][as 별명][ || 연산자][*]
+    from 테이블명
+    [where 조건] 
+    [group by 필드리스트]
+    [having 조건] 
+    [order by 필드리스트 [asc | desc]];  --오름/내림차순정렬
+    예) select * from member where addr like '%서울%'
+
+(2) insert문(테이블에 레코드 추가)
+    insert into 테이블명[(필드이름1, 필드이름2....)] 
+    values (data1,data2...)
+    예)insert into member(name, email, addr) values ('magic','magic@m.com','서울');
+
+    예)모든 필드가 NULL값을 허용하는 경우 필드명 생략가능
+       insert into member  values('오이', 27, 'A');
+
+(3) delete문(레코드 삭제)
+    delete from 테이블명 [where 조건]
+    예)delete from member where name = 'magic'
+
+(4) update문(데이터의 값변경)
+    update 테이블명 set 필드이름1=data1,필드이름2=data2 ..
+    [where 조건문]
+    예)update member set tel='123-4567' where name='magic'
+   
