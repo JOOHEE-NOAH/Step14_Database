@@ -281,51 +281,55 @@ alter table exam2 drop constraint NONAME2 cascade;
 alter table exam2 drop constraint PNUM2 cascade;
 alter table exam2 drop constraint UNIID2 cascade;
 
-
-
+select * from tab;
+select*from test;
 
 
 ================================================================
 --ex12) 테이블명 변경 : test ==> user3
-
-
-
+alter table test rename to user3;
 
 --ex13) 컬럼추가 :  user3  == > phone  varchar2(15)
-
-
+alter table user3 add phone varchar2(15);
+select * from user3;
 
 --ex14) 제약조건추가 : user3  ==>  id에  unique ,제약조건명 UID2
+alter table user3 add constraint UID2 unique(id);
 
-
-
-
-
+select constraint_name,constraint_type
+from user_constraints
+where table_name='USER3';
 
 --ex15)  컬럼추가 : user3 ==> no  number  (PK설정)
-
-
+alter table user3 add no number primary key;
 
 --ex16) 구조변경 : user3 ==> name  char(10) 를 varchar2(10)로 바꿈
-
-
+alter table user3 modify name char(5);
 
 --ex17) 컬럼삭제 : user3 ==> address
-
-
+alter table user3 drop column address; 
 
 --ex18) 테이블삭제 / 휴지통비우기: user3
+drop table user3;--휴지통에 넣고 삭제
 
-
-
-
-
-
+drop table user3 purge; --휴지통에 넣지 않고 바로 삭제
+flashback table user3 to before drop;
+select* from tab;
 --ex19) user1의 구조만 복사하여 user4로 생성할것  
 -- 이때, idx-> bunho,  id->sid,  name-> irum, address-> juso로 변경
+drop table user4;
 
+create table user4(bunho, sid, irum, juso)
+as
+select idx, id, name, address
+from user1
+where 1=0;
 
+select* from user4;
 
+select constraint_name,constraint_type
+from user_constraints
+where table_name='USER4';
 
 --ex19_1) insert, update, delete 테스트
 insert into user4(bunho, sid, irum, juso) values(1, 'aaa','lee','진주');
@@ -339,35 +343,44 @@ commit;
 select * from user4;
 
 --[문제1]user4의 'hong'의 주소를 '강원'으로 바꾸고 ID를 'abc'로 바꾸기
-
-
+update user4 set juso='강원', sid='abc'
+where irum='hong';
+--update와 set 사이에 테이블 이름.
 
 --[문제2]user4의 주소가  '주'로 끝나는 데이터만 제외하고 모두 삭제하시오
-
-
-
+--drop: 통째로 없앰 delete 하나의 데이터만 없앰
+delete from user4
+where juso not like '%주';
+commit
+-- 테이블에 수정이 가해지는 경우 커밋해준다. 근데 이클립스는 자동 커밋. 다른거 쓰면 커밋해주기.
 --[문제3] juso가 null인 데이터를 모두 삭제하시오
-
+delete from user4
+where juso is null
+commit
 
 
 --[문제4]user4의 구조는 남기고 모든행을 삭제하시오
-
-
+delete from user4;
+rollback
+select* from user4;
 ---------------------------------------------------------------------------
 --ex20) 시퀀스생성 / 삭제
+create sequence idx_sql increment by 2 start with 1 maxvalue 9 cycle nocache;  --cycle 보단 no cycle 더 사용하긴 함
 
+select idx_sql.nextval from dual;  --nextval:현재 적용하고자 하는 번호에 사용
+select idx_sql.currval from dual;  --currval:현재 시퀀스의 값
 
-
-
+drop sequence idx_sql;
 --ex21) 테이블생성과 시퀀스적용
 
+create table book(
+	num				number				primary key,
+	subject			varchar2(50),
+	price			number,
+	year			date
+);
 
-
-
-
-
-
-
+create sequence num_seq start with 1 increment by 1 nocycle nocache;
 
 insert into book(num,subject,price, year)
 values(num_seq.nextval,'오라클 무적정따라하기',10000,sysdate);
@@ -381,22 +394,31 @@ select * from book;
 
 --ex22) user2를 user3로 테이블 구조만 복사하시오
 --      (컬럼명은 그대로 복사)
+create table user3
+as
+select *
+from user2
+where 1=0;
 
+select* from user3;
 
-
-
-
-
+select constraint_name,constraint_type
+from user_constraints
+where table_name='USER3';  --not null 제약 조건만 복사
 
 
 --ex23) 테이블(idx->bunho,  name -> irum,  address -> juso) 을 복사하고  
 --id가  bbb인 레코드를 복사하시오
 --원본테이블 : user1   / 사본테이블 : user5
+select*from user1
 
-
-
-
-
+create table user5(bunho, irum, juso)
+as
+select idx, name, address
+from user1
+where id='bbb';
+--select 부터 where까지 인라인(서브쿼리) 방식
+select* from user5;
 
 ================================================================================================
 --ex24) 테이블생성후 행추가
@@ -409,48 +431,66 @@ select * from book;
 --ename   varchar2(30) ==> 널허용안됨, 제약조건명(ENAME)
 --deptno  number       ==> 외래키, 제약조건명(FKNO),
 --                                    대상데이터를 삭제하고 참조하는데이터는 NULL로 바꿈
+create table dept(
+	deptno		number				constraint		DNO			primary key,
+	dname		varchar2(30)		constraint		DNAME		not null
+);
 
+create table emp(
+	empno		number				constraint		ENO			primary key,
+	ename		varchar2(30)		constraint		ENAME		not null,
+	deptno		number,
+	constraint FKNO		foreign key (deptno) references dept on delete set null
+);
 
+insert into dept(deptno, dname) values(10, '개발부');
+insert into dept(deptno, dname) values(20, '영업부');
+insert into dept(deptno, dname) values(30, '관리부');
+insert into dept(dname) values(40, '총무부');  	--에러, 컬럼개수 불일치
+insert into dept values(40, '총무부');
 
+select * from dept;
 
-
-
-
-
-
-
-
+insert into emp(empno, ename, deptno) values (100, '강호동', 10);
+insert into emp(empno, ename, deptno) values (101, '아이유', 20);
+--insert into emp(empno, ename, deptno) values (102, '유재석', 50);
+--  에러: 부모 키가 없음 (50)
+insert into emp(empno, ename, deptno) values (103, '이효리', 40);
+insert into emp(empno, ename) values (105, '장동건');
+--insert into emp(ename, deptno) values ('고소영', 10);  --기본키에 null 허용 안됨.
+commit
 select * from dept;
 select * from emp;
 --ex25) 삭제
 --dept테이블에서 20번 부서를 삭제하시오 
-
-
+delete from dept where deptno=20;
+select*from emp;
 
 --삭제된 행을 되돌리시오
-
+rollback
 
 
 --ex26) 삭제(delete)
 --40번부서를 삭제하시오
-
+delete from dept where deptno=40;
 
 
 --삭제된 행을 되돌리시오
-
+rollback
 
 
 --참고)  
 --dept테이블의  deptno=40과  emp테이블의 deptno=40이 releation 이 형성된경우 
 --  ==> 삭제안됨(자식레코드가 발견되었습니다)
---on delete cascade를 설정하면 부모테이블과 자식테이블의 레코드가 함께 삭제됨
+--on delete cascade를 설정하면 부모테이블(primary key 지정된곳)과 자식테이블의 레코드가 함께 삭제됨
 --on delete set null를 설정하면 부모테이블은 삭제되고 자식테이블은 null로 바뀜
 
 --ex27) 수정(update)
 --장동건의 부서를 30으로 수정하시오
+update emp set deptno='30'
+where ename='장동건';
 
-
-
+select* from emp;
 --================================================================================================
 --[문제5]
 --테이블명 : member
