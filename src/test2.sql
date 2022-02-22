@@ -185,19 +185,66 @@ select to_char(to_date('15/01/05'),'YYYY"년" fmMM"월" fmDD"일"') from dual;
 select add_months(sysdate, 5) from dual;
 
 --ex15) last_day(date) : 해당달의 마지막날
+select last_day(sysdate) from dual;
+select last_day('2004-02-01') from dual;
 
---ex16) 오늘부터 이번달 말까지 총 남은 날수를 구하시오
+--ex16) 오늘부터 이번달 말까지 총 남은 날수를 구하시오(오늘 보다 내일 날짜가 더 큼)
+select last_day(sysdate)-sysdate from dual;
 
 --ex17) months_between(date1,date2) : 두 날짜사이의 달수
+select months_between('2004-02-01',sysdate) from dual; --음수 결과
+select months_between(sysdate,'2004-02-01') from dual;  --양수 결과
 
 --ex18) 암시적인 변환(자동)
+desc employees
+
+select employee_id, last_name
+from employees
+where department_id='90'; -- 자동형변환
+
+select months_between('15-10-21','2004-02-01') from dual;
+--						Date-->Number
 
 --ex19) 명시적인 변환(강제)     number --> character
+select last_name, salary
+from employees
+where last_name='King';
+--원래 급여는 숫자 자료형인데 문자형으로 변환시켜줌 to_char
+select last_name, to_char(salary,'L99,999.00')
+from employees
+where last_name='King';
 
 --ex20) fm형식 : 형식과 데이터가 반드시 일치해야함(fm - fm사이값만 일치)
+select last_name, hire_date from employees where hire_date='05/06/25'; --05/06/25 
+select last_name, hire_date from employees where hire_date='05/6/25'; --05/06/25 
+
+select to_char(to_date('15-04-07'), 'YYYY-MM-DD') from dual;
+select to_char(to_date('15-04-07'), 'YYYY-fmMM-DD') from dual;
+select to_char(to_date('15-04-07'), 'YYYY-fmMM-fmDD') from dual; --다시 fm 만나면 원래대로 돌아감
 
 --ex)2007-02-07에 입사한 사원을 검색하시오
+select last_name, hire_date from employees where hire_date='2007-02-07';
+select last_name, hire_date from employees where hire_date='2007/02/07'; --문자형인데 날짜형으로 변환
 
+select last_name, hire_date
+from employees
+where hire_date=to_char(to_date('2007-02-07'), 'YYYY-MM-DD');
+
+select last_name, hire_date
+from employees
+where to_char(hire_date, 'YY-MM-DD')=to_char(to_date('07/02/07'), 'YY-MM-DD');
+
+select last_name, hire_date
+from employees
+where to_char(hire_date, 'YY-MM-DD')=to_char(to_date('07/02/07'), 'YYYY-MM-DD'); --결과 안나옴(좌변 우변 형식 불일치)
+
+select last_name, hire_date
+from employees
+where to_char(hire_date, 'YYYY-MM-DD')=to_char(to_date('07/02/07'), 'YYYY-MM-DD');
+
+select last_name, hire_date
+from employees
+where to_char(hire_date, 'YYYY-MM-DD')=to_char(to_date('07/02/07'), 'YYYY-fmMM-DD'); --결과 안나옴(좌변 우변 형식 불일치)
 
 --ex21) RR, YY형식
 
@@ -212,13 +259,23 @@ select add_months(sysdate, 5) from dual;
 
    예)  현재년도            지정한날짜          RR형식            YY형식
         -----------------------------------------------------------------
-           1995              27-oct-95             
-           1995              27-oct-17             
+           1995              27-oct-95      1995  			2095    
+           1995              27-oct-17      1995  			2095       
            2001              27-oct-17            
            2001              27-oct-95             
 
 
 --ex22)
+select to_char(to_date('97/9/30','YY-MM-DD'), 'YYYY-MM-DD') from dual; --2097년
+select to_char(to_date('97/9/30','RR-MM-DD'), 'RRRR-MM-DD') from dual; --1997년
+select to_char(to_date('57/9/30','YY-MM-DD'), 'YYYY-MM-DD') from dual; --2057년
+select to_char(to_date('57/9/30','RR-MM-DD'), 'RRRR-MM-DD') from dual; --1957년
+
+select to_char(to_date('03/9/30','YY-MM-DD'), 'YYYY-MM-DD') from dual; --2003년
+select to_char(to_date('03/9/30','RR-MM-DD'), 'RRRR-MM-DD') from dual; --2003년
+
+select to_char(to_date('1903/9/30','YY-MM-DD'), 'YYYY-MM-DD') from dual; --1903년
+select to_char(to_date('1903/9/30','RR-MM-DD'), 'RRRR-MM-DD') from dual; --1903년
 
 --ex23)2005년 이후에 고용된 사원을 찾으시오
 --last_name     hire_date
@@ -226,22 +283,40 @@ select add_months(sysdate, 5) from dual;
 --King           17-Jan-1987
 --Kochhar        21-sep-1989
 --Whalen         17-sep-1987
+select last_name,to_char(to_date(hire_date),'DD-MON-YYYY')
+from employees
+where hire_date>=to_date('2005/01/01'); 
+-- =  hire_date>='2005/01/01' (자동형 변환 돼서 날짜로 인식)
 
+--나의 답
+select last_name,to_char(to_date(hire_date),'DD-MON-YYYY')
+from employees
+where hire_date> to_date('2005/12/31');
                      
 --**그룹함수    
 --ex24) count(컬럼명), max(컬럼명), min(컬럼명),avg(컬럼명),sum(컬럼명) 함수
 --employees테이블에서 급여의 최대,최소,평균,합을 구하시오
---조건) 평균은 소수이하절삭, 합은 세자리 마다 콤마찍고 \표시
+--조건) 평균은 소수이하절삭, 합은 세자리 마다 콤마찍고 \(역슬래시 아니고 통화기호 ㅁ 한자)
+select count(salary), max(salary), min(salary),trunc(avg(salary)),to_char(sum(salary),'L999,999,999')
+from employees
+--sum의 'L999,999,999'에서 L은 통화형식
 
 --ex25) 커미션을 받지 않는 사원의 인원수를 구하시오
+select count(commission_pct)
+from employees
+where commission_pct is null
 
 --ex26) employees테이블에서 없는부서포함해서,총 부서의 수를 구하시오(답 : 12개)
---      (nvl사용) 
+--      (nvl사용) nvl(null value): nvl(컬럼명, 바꿀값) null을 바꾸고자 하는 값으로. 여기서는 카운트가 널을 포함하지 않아 11로 출력되니 대충 아무 의미나 집어넣기
+select count(distinct nvl(department_id,0))
+from employees;
 
 --문제) 다음조건을 출력하시오
 --        조건1) 사원이름, 급여, 커미션, 연봉을 출력하시오
 --        조건2) 연봉 = 급여*12 + (급여*12)*커미션으로 한다
 --        조건3) 커미션을 받지 않는경우에는 0으로 표시한다
+select last_name 사원이름, salary 급여, nvl(commission_pct,0) 커미션, salary*12+(salary*12)*nvl(commission_pct,0) as 연봉
+from employees;
 
 --ex27) ① decode(표현식,검색1,결과1,검색2,결과2....[default])
 --        : 표현식과 검색을 비교하여 결과 값을 반환 다르면 default
@@ -252,27 +327,51 @@ select add_months(sysdate, 5) from dual;
 --            end
 
 --ex28)업무 id가 'SA_MAN' 또는 ‘SA_REP'이면 'Sales Dept' 그 외 부서이면 'Another'로 표시
---조건) 분류별로 오름차순정렬
+--조건) 분류별로 오름차순정렬 
 --        직무          분류
 --       --------------------------
 --       SA_MAN    Sales Dept
 --       SA_REP      Sales Dept
 --       IT_PROG    Another
-
+select job_id 직무,  
+		decode(job_id, 'SA_MAN','Sales Dept','SA_REP','Sales Dept','Another') 분류
+from employees
+order by 2;
+--2는 두번째 컬럼기준으로 정렬
+select job_id as "직무",
+		case job_id when 'SA_MAN' then 'Sales Dept'
+					when 'SA_REP' then 'Sales Dept'
+					else 'Another'
+					end as "분류"
+from employees
 
 --ex28) 급여가 10000미만이면 초급, 20000미만이면 중급 그 외이면 고급을 출력하시오 
 --      조건1) 컬럼명은  '구분'으로 하시오
 --      조건2) 제목은 사원번호, 사원명, 구  분
 --      조건3) 구분(오름차순)으로 정렬하고, 구분값이 같으면 사원명(오름차순)으로 정렬하시오
 
+select employee_id as "사원번호", last_name as "사원명",
+		case 	when salary<10000 then '초급'
+				when salary<20000 then '중급'
+					else '고급'
+					end as "구  분"
+from employees
+order by 3asc, 2 asc;
 
 --rank함수 : 전체값을 대상으로 순위를 구함
 --rank(표현식) within group(order by 표현식)     ---> 부분
 --rank() over(쿼리파티션)                                ---> 전체순위를 표시
 
 --ex29)급여가 3000인 사람의 상위 급여순위를 구하시오
+select salary from employees order by 1;
+
+ -->3000이 샐러리 그룹에서 몇번째 순위인가? 라는 뜻.
+select rank(3000) within group(order by salary desc) "rank"
+from employees
 
 --ex30)전체사원의 급여순위를 구하시오
+select last_name, salary, rank() over(order by salary desc) "rank"
+from employees
 
 --first_value함수 : 정렬된 값 중에서 첫번째값 반환
 --first_value(표현식) over(쿼리파티션)
